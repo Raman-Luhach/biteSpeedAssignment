@@ -8,9 +8,12 @@ const identifyController = async (req, res) => {
     if (!email && !phoneNumber) {
         return res.status(400).send({"message":"Either email or phoneNumber is required"})
     }
+    let check = true ;
+    if (!email || !phoneNumber) {
+        check = false
+    }
 
     try {
-
         const existingContacts = await prisma.contact.findFirst({
             where: {
                 AND: [
@@ -31,12 +34,17 @@ const identifyController = async (req, res) => {
         });
 
 
-        if (!existingContacts && !matchingContact) {
+        if (!check){
+            return res.status(400).send({"message": "either email or phoneNumber is not provided and no previous entry exists."})
+        }
+
+
+        if (!existingContacts && !matchingContact && check) {
             await prisma.contact.create({
                 data: { email, phoneNumber },
             });
-        }else if(!existingContacts && matchingContact){
-            if (matchingContact.linkedId){
+        }else if(!existingContacts && matchingContact && check){
+            if (matchingContact.linkedId ){
                 await prisma.contact.create({
                     data: { email, phoneNumber , linkedId: matchingContact.linkedId , linkPrecedence: "secondary" },
                 })
